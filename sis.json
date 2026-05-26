@@ -1,0 +1,184 @@
+{
+  "name": "sis",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sis",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        272
+      ],
+      "id": "0c066be8-d40a-4cc2-8a23-4c8c54eb0333",
+      "name": "Webhook",
+      "webhookId": "82dddd19-11d1-4989-95fc-55ef63cb8a9b"
+    },
+    {
+      "parameters": {
+        "chatId": "8398346440",
+        "text": "=Müştəri adı: {{ $json.query.customer_name }}\nMüştəri soyadı: {{ $json.query.customer_surname }}\nMüştəri nömrəsi: {{ $json.query.customer_number }}\nGiriş tarixi: {{ $json.query.check_in }}\nÇıxış tarixi: {{ $json.query.check_out }}\nQiymət: {{ $json.query.total_price }}\nEv: {{ $json.query.villa_name }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "4c666a88-4916-4cf1-bf9c-452d76775f8d",
+      "name": "Send a text message",
+      "webhookId": "bd451e15-93d5-450b-85b0-91d7e96482fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "pVdaeVLbRHaKcgGc",
+          "name": "sis"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        -224
+      ],
+      "id": "a60b29c8-9856-4191-9fe2-d198c1adafc9",
+      "name": "sis",
+      "webhookId": "1846aae2-e40b-4508-aa29-73ef1f72c727",
+      "credentials": {
+        "telegramApi": {
+          "id": "pVdaeVLbRHaKcgGc",
+          "name": "sis"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "5513833049",
+        "text": "=Müştəri adı: {{ $json.query.customer_name }}\nMüştəri soyadı: {{ $json.query.customer_surname }}\nMüştəri nömrəsi: {{ $json.query.customer_number }}\nGiriş tarixi: {{ $json.query.check_in }}\nÇıxış tarixi: {{ $json.query.check_out }}\nQiymət: {{ $json.query.total_price }}\nEv: {{ $json.query.villa_name }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        192
+      ],
+      "id": "a5f01037-081d-4aeb-91bd-6f5695f78631",
+      "name": "Send a text message1",
+      "webhookId": "bd451e15-93d5-450b-85b0-91d7e96482fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "pVdaeVLbRHaKcgGc",
+          "name": "sis"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "1086761194",
+        "text": "=Müştəri adı: {{ $json.query.customer_name }}\nMüştəri soyadı: {{ $json.query.customer_surname }}\nMüştəri nömrəsi: {{ $json.query.customer_number }}\nGiriş tarixi: {{ $json.query.check_in }}\nÇıxış tarixi: {{ $json.query.check_out }}\nQiymət: {{ $json.query.total_price }}\nEv: {{ $json.query.villa_name }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        384
+      ],
+      "id": "63e46bd6-95f8-469d-a604-b337538bbb8a",
+      "name": "Send a text message2",
+      "webhookId": "bd451e15-93d5-450b-85b0-91d7e96482fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "pVdaeVLbRHaKcgGc",
+          "name": "sis"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "7110451854",
+        "text": "=Müştəri adı: {{ $json.query.customer_name }}\nMüştəri soyadı: {{ $json.query.customer_surname }}\nMüştəri nömrəsi: {{ $json.query.customer_number }}\nGiriş tarixi: {{ $json.query.check_in }}\nÇıxış tarixi: {{ $json.query.check_out }}\nQiymət: {{ $json.query.total_price }}\nEv: {{ $json.query.villa_name }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        576
+      ],
+      "id": "d6737aaf-5e03-432d-a50d-296e38bd8437",
+      "name": "Send a text message3",
+      "webhookId": "bd451e15-93d5-450b-85b0-91d7e96482fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "pVdaeVLbRHaKcgGc",
+          "name": "sis"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "35a66a1a-4c13-4eb0-86bc-a55276a9a47f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "AeVYjLg9G88xs8PP",
+  "tags": []
+}

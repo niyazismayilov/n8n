@@ -1,0 +1,1046 @@
+{
+  "name": "fall ai",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "9d09ef38-8115-4cf3-a7e5-f80ad66ecdd8",
+      "name": "📅 Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        1696
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-topic-001",
+              "name": "topic",
+              "value": "Abandoned places around the world",
+              "type": "string"
+            },
+            {
+              "id": "cfg-scenes-002",
+              "name": "scenes",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "cfg-duration-003",
+              "name": "scene_duration",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "cfg-ratio-004",
+              "name": "aspect_ratio",
+              "value": "9:16",
+              "type": "string"
+            },
+            {
+              "id": "cfg-res-005",
+              "name": "resolution",
+              "value": "1080p",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2a7d786d-2bdc-47a2-8730-34b13463b9e9",
+      "name": "⚙️ Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bfe6f641-b01e-4245-97dd-069666fce439",
+      "name": "🧠 Gemini 2.0 Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"scene_prompts\": [\"A drone shot slowly pulls back from a mossy stone doorway, golden hour light, melancholic mood.\", \"Inside, shafts of dusty light pierce broken windows, camera pans left, eerie silence.\", \"Wide aerial view of overgrown courtyard, slow zoom out, haunting and cinematic.\"],\n  \"title\": \"Forgotten Worlds: Abandoned Places\",\n  \"description\": \"Journey through hauntingly beautiful abandoned places around the world. From crumbling mansions to forgotten factories, nature is slowly reclaiming what humans left behind. Each frame tells a story of time, decay, and beauty. Subscribe for more cinematic explorations of the world's hidden corners. #abandoned #urbex #explore\",\n  \"tags\": [\"abandoned\", \"urbex\", \"explore\", \"forgotten\", \"ruins\", \"cinematic\", \"nature\", \"history\"]\n}"
+      },
+      "id": "6f65f52d-1f61-440a-994d-baca5f073340",
+      "name": "📋 Scene Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate YouTube video content.\n\nTopic: {{ $json.topic }}\nNumber of scenes: {{ $json.scenes }}\nScene duration: {{ $json.scene_duration }} seconds each",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a professional YouTube video content creator and cinematographer.\n\nGenerate content for a YouTube video with EXACTLY {{ $('⚙️ Config').first().json.scenes }} scenes.\n\nProduce:\n1. An array of EXACTLY {{ $('⚙️ Config').first().json.scenes }} cinematic video prompts for Seedance v1.5 Pro. Each prompt (2-3 sentences) must describe: the main visual subject, camera movement (e.g. slow push-in, dolly, pan, aerial pullback), lighting conditions, and overall mood. Prompts must form a coherent narrative arc together.\n2. A compelling YouTube title (max 60 characters, no clickbait).\n3. A YouTube description of 150-200 words ending with 3-5 relevant hashtags.\n4. An array of 8-10 YouTube tags.\n\nRespond ONLY with valid JSON matching the output schema. No markdown fences, no extra text."
+        }
+      },
+      "id": "09ec1db5-fc87-4557-bbe4-ec77315e3c2d",
+      "name": "🎬 Gemini Content Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1168,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "scene_prompts",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "id": "03dedecb-ec4f-4d3c-b59c-ef8c5564233c",
+      "name": "🔀 Split Scenes",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        1504
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/bytedance/seedance/v1.5/pro/text-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ prompt: $json.scene_prompts, duration: $('⚙️ Config').first().json.scene_duration, aspect_ratio: $('⚙️ Config').first().json.aspect_ratio, resolution: $('⚙️ Config').first().json.resolution }) }}",
+        "options": {}
+      },
+      "id": "5370bc24-0beb-419f-8b3c-b9d33ab4085f",
+      "name": "🚀 Submit Scene to Fal.ai",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2192,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "id": "116b5c40-d838-4988-860f-d8cdf1232775",
+      "name": "⏳ Wait for Scene",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        1744
+      ],
+      "webhookId": "a1b2c3d4-aaaa-bbbb-cccc-111111111111"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "scenes",
+        "options": {}
+      },
+      "id": "d88c6e32-9acc-478f-b1de-5e7a57067f0c",
+      "name": "📦 Aggregate Scene URLs",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3200,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const scenes = $input.first().json.scenes;\n\nconst mediaUrls = scenes.map((scene, i) => {\n  const url = scene?.video?.url\n    || scene?.video_url\n    || scene?.url\n    || scene?.output?.video?.url;\n  if (!url) throw new Error(`Scene ${i + 1} has no video URL. Got: ${JSON.stringify(scene)}`);\n  return url;\n});\n\n// fal-ai/ffmpeg-api requires at least 2 items — bypass concat for single scene\nif (mediaUrls.length < 2) {\n  const agentOut = $('🔄 Parse Agent Output').first().json;\n  return [{ json: {\n    skip_concat: true,\n    final_video_url: mediaUrls[0],\n    title: agentOut.title,\n    description: agentOut.description,\n    tags: agentOut.tags\n  }}];\n}\n\nreturn [{ json: { skip_concat: false, media_urls: mediaUrls } }];"
+      },
+      "id": "9359ad70-8fa4-4037-ad57-39f03ca69f14",
+      "name": "🔧 Prepare Concat Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/merge-videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ video_urls: $json.media_urls }) }}",
+        "options": {}
+      },
+      "id": "3cd02a6d-cd6b-4281-83ea-1db1d3d8974f",
+      "name": "🔗 Submit Concat to Fal.ai",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3872,
+        1232
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1468c47e-fd9c-41e5-aed6-2cc8bc12d511",
+      "name": "⏳ Wait for Concat",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4224,
+        1344
+      ],
+      "webhookId": "a1b2c3d4-aaaa-bbbb-cccc-222222222222"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "b1419381-d9ef-4579-b164-fc7bb69dcbdc",
+      "name": "📥 Get Concat Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4736,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\n\n// Single-scene bypass path (from 🔀 Skip Concat?)\nif (result.final_video_url) {\n  return [{ json: {\n    final_video_url: result.final_video_url,\n    title: result.title,\n    description: result.description,\n    tags: result.tags\n  }}];\n}\n\n// Normal multi-scene concat result\nconst url = result?.video?.url\n  || result?.output?.url\n  || result?.output?.video?.url\n  || result?.url\n  || result?.mp4_url\n  || result?.video_url;\n\nif (!url) throw new Error('No video URL found in concat response: ' + JSON.stringify(result));\n\nconst agentOut = $('🔄 Parse Agent Output').first().json;\n\nreturn [{\n  json: {\n    final_video_url: url,\n    title: agentOut.title,\n    description: agentOut.description,\n    tags: agentOut.tags\n  }\n}];"
+      },
+      "id": "1f9445a9-f204-454d-ad1b-c98215ce52b3",
+      "name": "🔍 Extract Final URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4896,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('🔍 Extract Final URL').item.json.final_video_url }}",
+        "options": {}
+      },
+      "id": "58283e15-e8ae-42db-8e28-b41d4dad28cb",
+      "name": "⬇️ Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5408,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('🔍 Extract Final URL').first().json.title }}",
+        "regionCode": "AZ",
+        "categoryId": "22",
+        "options": {
+          "description": "={{ $('🔍 Extract Final URL').first().json.description }}",
+          "privacyStatus": "public",
+          "tags": "={{ '#' + $json.tags.join(' #') }}"
+        }
+      },
+      "id": "935a7bf7-ada4-4ef9-ac81-b719b0ef98c8",
+      "name": "▶️ Upload to YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        5680,
+        1504
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        672,
+        1504
+      ],
+      "id": "f4c0a4e6-ac27-4700-9ee2-9a62f9679af4",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\n\n// n8n AI Agent sometimes wraps structured output under 'output'\nconst data = (raw.output && typeof raw.output === 'object') ? raw.output : raw;\n\nif (!data.scene_prompts || !Array.isArray(data.scene_prompts)) {\n  throw new Error('Agent did not return scene_prompts array. Raw output: ' + JSON.stringify(raw));\n}\n\nif (!data.title || !data.description || !data.tags) {\n  throw new Error('Agent output missing title/description/tags. Raw output: ' + JSON.stringify(raw));\n}\n\nreturn [{ json: data }];"
+      },
+      "id": "2caabac7-d1d8-4a42-a075-3446a7dfdfa0",
+      "name": "🔄 Parse Agent Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.status_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "bae8b52a-ac27-422a-94f0-f687a520c539",
+      "name": "📥 Check Scene",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2448,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2928,
+        1488
+      ],
+      "id": "4fa6a6d2-7e2e-4ef2-b428-4349d9448dae",
+      "name": "Get Video Url"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e35b10a1-dc4f-4c97-8634-60bad5a93540",
+              "leftValue": "={{ $('⚙️ Config').item.json.scenes }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3648,
+        1488
+      ],
+      "id": "80587de1-d5ea-4841-bcf5-5018680b8891",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3e1e90f5-eab5-49f6-8fb6-a842cc0ae7e0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2688,
+        1504
+      ],
+      "id": "4f3ba987-0ddb-4982-9fea-e281037b3540",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.status_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "7cbefb04-88df-4fdf-9bf0-b35b9bd31c4e",
+      "name": "Check Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4096,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3e1e90f5-eab5-49f6-8fb6-a842cc0ae7e0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4320,
+        1232
+      ],
+      "id": "04aaa3d4-36d2-461b-b010-9341d33b19fd",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0",
+          "mode": "list",
+          "cachedResultName": "Automation Data Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Youtube Videos Framly",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.title }}",
+            "description": "={{ $json.description }}",
+            "topic": "={{ $('⚙️ Config').item.json.topic }}",
+            "scenes": "={{ $('⚙️ Config').item.json.scenes }}",
+            "scene_duation": "={{ $('⚙️ Config').item.json.scene_duration }}",
+            "aspect_ratio": "={{ $('⚙️ Config').item.json.aspect_ratio }}",
+            "resoludion": "={{ $('⚙️ Config').item.json.resolution }}",
+            "video_url": "={{ $json.final_video_url }}"
+          },
+          "matchingColumns": [
+            "video_url"
+          ],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "scenes",
+              "displayName": "scenes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "scene_duation",
+              "displayName": "scene_duation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resoludion",
+              "displayName": "resoludion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "youtube_url",
+              "displayName": "youtube_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        5136,
+        1504
+      ],
+      "id": "18519ba1-8727-49b2-a767-5b3693d7e338",
+      "name": "Append or update row in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0",
+          "mode": "list",
+          "cachedResultName": "Automation Data Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Youtube Videos Framly",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1soBte3BI9FiM0ryJU1IUEAOffAAYpAzUlxVpuGXqex0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "video_url": "={{ $('⬇️ Download Video').item.json.final_video_url }}",
+            "youtube_url": "=https://www.youtube.com/watch?v={{ $json.uploadId }}"
+          },
+          "matchingColumns": [
+            "video_url"
+          ],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scenes",
+              "displayName": "scenes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scene_duation",
+              "displayName": "scene_duation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resoludion",
+              "displayName": "resoludion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "youtube_url",
+              "displayName": "youtube_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        5936,
+        1504
+      ],
+      "id": "fa0f9405-dc4f-4325-b149-83c5d334bcfa",
+      "name": "Append or update row in sheet1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📅 Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Config": {
+      "main": [
+        [
+          {
+            "node": "🎬 Gemini Content Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Gemini 2.0 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🎬 Gemini Content Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Scene Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "🎬 Gemini Content Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎬 Gemini Content Agent": {
+      "main": [
+        [
+          {
+            "node": "🔄 Parse Agent Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Split Scenes": {
+      "main": [
+        [
+          {
+            "node": "🚀 Submit Scene to Fal.ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏳ Wait for Scene": {
+      "main": [
+        [
+          {
+            "node": "📥 Check Scene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Aggregate Scene URLs": {
+      "main": [
+        [
+          {
+            "node": "🔧 Prepare Concat Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔧 Prepare Concat Payload": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Submit Concat to Fal.ai": {
+      "main": [
+        [
+          {
+            "node": "Check Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏳ Wait for Concat": {
+      "main": [
+        [
+          {
+            "node": "Check Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 Get Concat Result": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extract Final URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extract Final URL": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Download Video": {
+      "main": [
+        [
+          {
+            "node": "▶️ Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Parse Agent Output": {
+      "main": [
+        [
+          {
+            "node": "🔀 Split Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 Check Scene": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Url": {
+      "main": [
+        [
+          {
+            "node": "📦 Aggregate Scene URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "🔗 Submit Concat to Fal.ai",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔍 Extract Final URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get Video Url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⏳ Wait for Scene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Result": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "📥 Get Concat Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⏳ Wait for Concat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "▶️ Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚀 Submit Scene to Fal.ai": {
+      "main": [
+        [
+          {
+            "node": "⏳ Wait for Scene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0c95e8e2-c378-478d-a699-683f9882ec83",
+  "meta": {
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "Ux4UvgyZEtNKRuKW",
+  "tags": []
+}

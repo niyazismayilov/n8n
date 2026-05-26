@@ -1,0 +1,280 @@
+{
+  "name": "[new and improved] Insta dm automation",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "sis/insta",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "f5ae58d9-d62c-4281-9945-12e35335e3f1",
+      "name": "Webhook",
+      "webhookId": "8617105f-4054-4210-b209-6a9ac44ac294"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Facebook Webhook Verification\n// Triggered by the Webhook node's GET request from Facebook\n\n// Get query parameters from the incoming request\nconst query = $json[\"query\"] || {};\n\nconst VERIFY_TOKEN = \"esger\"; // Replace with your own secret verify token\nconst mode = query[\"hub.mode\"];\nconst token = query[\"hub.verify_token\"];\nconst challenge = query[\"hub.challenge\"];\n\n// Validate the token and mode\nif (mode === \"subscribe\" && token === VERIFY_TOKEN) {\n  // Token is valid - respond with the challenge\n  return [\n    {\n      json: {\n        success: true,\n        message: \"Webhook verified successfully\",\n        challenge: challenge\n      }\n    }\n  ];\n} else {\n  // Token is invalid - respond with an error\n  return [\n    {\n      json: {\n        success: false,\n        message: \"Webhook verification failed\"\n      }\n    }\n  ];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -160
+      ],
+      "id": "002c066d-db6e-49dd-bb0b-b55918d27f35",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.challenge }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        -160
+      ],
+      "id": "e24e318e-8bd9-4871-9d5e-73bbe5a9e4d7",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.entry[0].messaging[0].message.text }}",
+        "options": {
+          "systemMessage": "You are the AI assistant of Brand Bounce, an AI automation agency that helps entrepreneurs and businesses grow faster using automation and AI systems.\n\nWhen someone messages on Instagram:\n\nRespond naturally and conversationally, like a friendly human assistant.\n\nAnswer only questions related to Brand Bounce, its AI automation services, YouTube tutorials, or how to book a call.\n\nIf someone asks about working with Brand Bounce or getting help, invite them to book a free strategy call and include this link: https://brandbounce.com/call\n\nKeep every response short, clear, and helpful.\n\nDo not include any explanations, notes, formatting, or greetings—only the plain response text.\n\nNever output anything other than the text you want to send as the Instagram reply."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        144
+      ],
+      "id": "90b22cb4-b18e-43c9-bb3a-26e0bc74d0cd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        368
+      ],
+      "id": "de8d8421-5127-4fbf-8106-90a6fe41d9fc",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SRoMn5qs8d7lguCY",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v25.0/me/messages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "access_token",
+              "value": "EAAaKXn1A6XUBRE0KuZCXZAwZAer8T3DMMt0r1ToaVzUmpe4j3vC4hlFvafWlaffaTPOpYZAPygWutSe5M4TBtRtqu5brKIwRnseF78vZAftacKPohjPnAulQpSKXEaB9MQa3oozrLVqs3eJlZBZAjvWEQkEWf3DY0syCtAaU30jZBZAPo1M0n38KY8zztyCYBDolXBaqkrkpLsn9HEBAIj5fsimCq"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_type\": \"RESPONSE\",\n  \"access_token\": \"EAAaKXn1A6XUBRE0KuZCXZAwZAer8T3DMMt0r1ToaVzUmpe4j3vC4hlFvafWlaffaTPOpYZAPygWutSe5M4TBtRtqu5brKIwRnseF78vZAftacKPohjPnAulQpSKXEaB9MQa3oozrLVqs3eJlZBZAjvWEQkEWf3DY0syCtAaU30jZBZAPo1M0n38KY8zztyCYBDolXBaqkrkpLsn9HEBAIj5fsimCq\",\n  \"recipient\": {\n    \"id\": \"904675325634295\"\n  },\n  \"message\": {\n    \"text\": \"test\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        128
+      ],
+      "id": "1a75b09d-5f9d-4a26-bd5e-4b2d5bdca1a3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        368
+      ],
+      "id": "0b675b71-3804-44cd-b79c-006140331789",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $('AI Agent').item.json.output;\n\n// Escape any characters that would break JSON\nconst safeOutput = aiOutput\n  .replace(/\\\\/g, '\\\\\\\\')\n  .replace(/\"/g, '\\\\\"')\n  .replace(/\\n/g, '\\\\n')\n  .replace(/\\r/g, '\\\\r');\n\nreturn [{ json: { safeOutput } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        96
+      ],
+      "id": "edfe5b27-c18d-4822-b493-b9e6d6cae737",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "resource": "messaging",
+        "node": "1017514628115977",
+        "graphApiVersion": "v25.0",
+        "recipientId": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+        "messageText": "test"
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        624,
+        592
+      ],
+      "id": "4886bfb8-0c5d-41d1-9648-b39a5de5dba0",
+      "name": "Send direct message",
+      "credentials": {
+        "instagramApi": {
+          "id": "PAu2Xq8pPLolgGiw",
+          "name": "Instagram account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "1017514628115977",
+        "edge": "messages",
+        "options": {
+          "queryParametersJson": "=   {\n     \"recipient\": { \"id\": \"{{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}\" },\n     \"message\": { \"text\": \"{{ $('Code in JavaScript1').item.json.safeOutput }}\" },\n     \"messaging_type\": \"RESPONSE\"\n   }"
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        704,
+        336
+      ],
+      "id": "281dc8f6-e3e5-4826-abb4-bede32b11533",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "1ddsPDDh1P1NYItb",
+          "name": "Facebook Graph account 2"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a0ee9943-b53c-4d0e-894a-196f556df1eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "QSzKcawG86oz2vtV",
+  "tags": []
+}
