@@ -1,0 +1,266 @@
+{
+  "name": "hugging",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        -48
+      ],
+      "id": "85a12c80-cfbc-4539-8acb-a6df69278f4b",
+      "name": "Telegram Trigger",
+      "webhookId": "7f45895b-ed17-4195-8850-03c62d358f9d",
+      "credentials": {
+        "telegramApi": {
+          "id": "9zLQUl41y3JuhGRv",
+          "name": "image generator"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        -144
+      ],
+      "id": "5af7ecaa-f466-4ed9-97fe-0774cc3af7af",
+      "name": "Send a photo message",
+      "webhookId": "1305e2c2-fc1a-4a30-acd3-a35aff950cf2",
+      "credentials": {
+        "telegramApi": {
+          "id": "9zLQUl41y3JuhGRv",
+          "name": "image generator"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": \"{{ $json.message.text }}\",\n  \"options\": {\n    \"wait_for_model\": true\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        176,
+        -48
+      ],
+      "id": "fcfe8be2-eebd-4185-816c-4de288bc6379",
+      "name": "text to image",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.poe.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 39LaN5M1ihBBcrB9n1TvGGHIBILV1REEi106t_xGcwk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"flux-1-schnell-fw\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message.text }}\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        48
+      ],
+      "id": "c627c363-a544-4a9b-acd1-66553af9a414",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.item.json.choices[0].message.content;\n// Extract URL from the content\nconst urlMatch = content.match(/https:\\/\\/[^\\s)]+\\.jpg/);\nconst imageUrl = urlMatch ? urlMatch[0] : null;\n\nreturn {\n  imageUrl: imageUrl,\n  fullContent: content\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        48
+      ],
+      "id": "b81d226f-4303-48a1-951a-9412f423154c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        48
+      ],
+      "id": "a8371544-20a2-4d15-bd19-cbc690a3d593",
+      "name": "HTTP Request2",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        -48
+      ],
+      "id": "100594d8-5dad-45e9-aad2-8d0899d097e2",
+      "name": "Send a photo message1",
+      "webhookId": "1305e2c2-fc1a-4a30-acd3-a35aff950cf2",
+      "credentials": {
+        "telegramApi": {
+          "id": "9zLQUl41y3JuhGRv",
+          "name": "image generator"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1072,
+        144
+      ],
+      "id": "f02b16e2-1063-4d39-8e60-e960afb1e6ab",
+      "name": "HTTP Request3",
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "text to image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text to image": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5b16be8c-e123-4733-bbc8-3b32822c9838",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "yMXpuVgCVhW5ts07",
+  "tags": []
+}

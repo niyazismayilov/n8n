@@ -1,0 +1,151 @@
+{
+  "name": "Pdf reader",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "690fc131-bf1d-4b73-ad4d-06cb3424ddca",
+      "name": "Telegram Trigger",
+      "webhookId": "57b6b981-e449-4120-8273-97ba956a55ee",
+      "credentials": {
+        "telegramApi": {
+          "id": "cXbmy7QGZ7c2tchN",
+          "name": "Pdf reader"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional teacher.\n\nRead the following PDF content and create 5 clear, meaningful questions based on it.\nEach question must have a short and correct answer.\n\nPDF CONTENT:\n{{ $json.message.text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        288,
+        0
+      ],
+      "id": "7a855973-4f44-4efd-bee6-eb2a21b70bed",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        224
+      ],
+      "id": "b53efde8-7d4d-4c96-830d-386aec651196",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "aFtZfGzaHEUgJ7tR",
+          "name": "chattest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1086761194",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "b3087cde-77dd-4707-aaf4-c009de7d6197",
+      "name": "Send a text message",
+      "webhookId": "dcac595a-b923-43fa-9c02-446043a3a57b",
+      "credentials": {
+        "telegramApi": {
+          "id": "tiKFldP2QbSKua9s",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        144,
+        128
+      ],
+      "id": "4232df48-0bd2-4fee-a800-fbb4c26e0b2a",
+      "name": "Extract from File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "55be23f0-3dd0-4a9d-9ad6-55d1c28787da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "OnRcLLLBQ37muwjA",
+  "tags": []
+}

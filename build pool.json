@@ -1,0 +1,996 @@
+{
+  "name": "build pool",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -4784,
+        1616
+      ],
+      "id": "3828e6fa-5b25-49e6-9c59-1470927c8753",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4528,
+        1840
+      ],
+      "id": "68c2b8ed-948c-4f1e-9c74-54fb4ffd0fae",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120",
+          "mode": "list",
+          "cachedResultName": "building",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4160,
+        1808
+      ],
+      "id": "df47cdcf-2bcb-44f1-8b4f-6cdbc6f226e0",
+      "name": "Read Used Shapes",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bGo98N1Uu859lToR",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -3872,
+        1888
+      ],
+      "id": "60d0ef34-a7e6-4dd2-8056-17b819b75aea",
+      "name": "Collect All Rows"
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -3040,
+        2048
+      ],
+      "id": "e29fe7dc-f619-4ab4-99f9-3f7c11851a43",
+      "name": "Wait 4 min",
+      "webhookId": "pool-wait-4min-001"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "video-ready-check",
+              "leftValue": "={{ $json.response?.videos?.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3360,
+        2288
+      ],
+      "id": "4c042147-ea35-4181-b082-aedf2403e296",
+      "name": "Video Ready?"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -3360,
+        2528
+      ],
+      "id": "9e30ef7f-84b8-41a5-9569-2cfcf5b5252d",
+      "name": "Wait 1 min retry",
+      "webhookId": "pool-retry-wait-001"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120",
+          "mode": "list",
+          "cachedResultName": "building",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16Hb10rYP39KQ4BXcAmST3O5sq2DtMd8f80XsROWV120/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pool_shape": "={{ $('Set Video Variables1').item.json.POOL_SHAPE }}",
+            "pool_description": "={{ $('Set Video Variables1').item.json.POOL_DESCRIPTION }}",
+            "youtube_title": "={{ $('Set Video Variables1').item.json.YOUTUBE_TITLE }}",
+            "youtube_caption": "={{ $('Set Video Variables1').item.json.YOUTUBE_CAPTION }}",
+            "created_at": "={{ $now.toISO() }}",
+            "status": "done"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "pool_shape",
+              "displayName": "pool_shape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pool_description",
+              "displayName": "pool_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "youtube_title",
+              "displayName": "youtube_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "youtube_caption",
+              "displayName": "youtube_caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3664,
+        2528
+      ],
+      "id": "43bf0978-0d24-4ad2-b55f-3d749c509807",
+      "name": "Save Shape to Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bGo98N1Uu859lToR",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a new unique pool shape idea. Here are ALL shapes already used — you MUST NOT repeat any of these:\n\n{{ $json.data.map(row => row.pool_shape).filter(Boolean).join('\\n') || 'None yet — this is the first video.' }}\n\nPick something completely different and generate the full prompt now.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI that creates hyper-realistic cinematic video prompts for Google VEO3.\n\nYour job: Generate a prompt for a SINGLE time-lapse video showing a swimming pool being built from scratch to completion in one continuous shot. The entire build — from digging to finished filled pool — must be shown at 10x speed time-lapse.\n\nSTEP 1 — Pick a random creative pool shape. You will receive a list of already-used shapes. You MUST pick something NOT on that list. Be creative — here are ideas to inspire you (but invent new ones too):\n- iPhone shape\n- Guitar shape  \n- Lion or tiger silhouette\n- Map of Azerbaijan\n- Giant fish shape\n- Piano keys shape\n- Infinity symbol\n- Heart shape\n- Football/soccer field shape\n- Vintage car top-down view\n- Palm tree silhouette\n- Airplane top view\n- Dragon silhouette\n- Crescent and star\n- Butterfly wings\n- Map of a country\n- Famous logo shape\n- Animal footprint\nIf all of these are used, invent something completely new and visually spectacular.\n\nSTEP 2 — Write the Veo3 prompt following ALL these rules:\n\nVISUAL STYLE:\n- TIME-LAPSE at 10x speed showing FULL construction start to finish\n- Camera FIXED elevated position — second floor balcony or drone hover — looking DOWN\n- Full yard and luxury white house always visible in frame\n- Pool shape clearly visible from above like aerial blueprint coming to life\n- Sunny day, clear blue sky, golden sunlight throughout\n- Man appears small within grand property — POOL is the hero\n\nTHE SETTING:\n- Large modern luxury house, white exterior, floor-to-ceiling glass windows\n- Flat roof, 2-3 floors, wide stone staircase on the left side\n- Enormous well-manicured yard — green grass, trimmed hedges, stone tile driveway\n- Background: green forested hills or mountains\n\nTHE BUILD SEQUENCE in time-lapse:\n1. Man marks the shape on the grass\n2. Excavation — digging the shaped hole\n3. Concrete walls and floor poured\n4. Tiles installed\n5. Pool equipment installed\n6. Pool fills with crystal blue water\n7. Final reveal — perfect shaped pool gleaming in sunlight\n\nAudio: satisfying construction sounds sped up, birds, wind, water filling at end\n\nOutput ONLY a JSON object:\n{\n  \"pool_shape\": \"name of the chosen shape\",\n  \"pool_description\": \"1 sentence describing why this shape is visually spectacular\",\n  \"veo3_prompt\": \"the full single-paragraph video prompt, 750-1500 characters, no line breaks\",\n  \"youtube_title\": \"viral YouTube title in Azerbaijani with emoji\",\n  \"youtube_caption\": \"viral caption with 1 emoji + 12 hashtags all lowercase\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -3664,
+        1808
+      ],
+      "id": "afe72e7f-5de3-4af5-b5ca-eb65c1c47067",
+      "name": "Pool Idea + Prompt Agent1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"pool_shape\": \"iPhone shape\",\n  \"pool_description\": \"A pool shaped like an iPhone from above, with rounded rectangular body and circular home button.\",\n  \"veo3_prompt\": \"A breathtaking aerial time-lapse...\",\n  \"youtube_title\": \"iPhone şəklində hovuz tikdim! 📱\",\n  \"youtube_caption\": \"iPhone hovuz 📱 #hovuz #pool #viral #trending #fyp #keşfet #baku #azerbaycan #trend #reels\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -3664,
+        2048
+      ],
+      "id": "527f28ab-fe91-48fb-8f13-e7e3582e995e",
+      "name": "Pool Output Parser1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "PROJECT_ID",
+              "type": "string",
+              "value": "nowbuzz"
+            },
+            {
+              "id": "2",
+              "name": "MODEL_VERSION",
+              "type": "string",
+              "value": "veo-3.1-lite-generate-001"
+            },
+            {
+              "id": "3",
+              "name": "LOCATION",
+              "type": "string",
+              "value": "us-central1"
+            },
+            {
+              "id": "4",
+              "name": "API_ENDPOINT",
+              "type": "string",
+              "value": "us-central1-aiplatform.googleapis.com"
+            },
+            {
+              "id": "5",
+              "name": "TEXT_PROMPT",
+              "type": "string",
+              "value": "={{ $json.output.veo3_prompt }}"
+            },
+            {
+              "id": "6",
+              "name": "POOL_SHAPE",
+              "type": "string",
+              "value": "={{ $json.output.pool_shape }}"
+            },
+            {
+              "id": "7",
+              "name": "POOL_DESCRIPTION",
+              "type": "string",
+              "value": "={{ $json.output.pool_description }}"
+            },
+            {
+              "id": "8",
+              "name": "YOUTUBE_TITLE",
+              "type": "string",
+              "value": "={{ $json.output.youtube_title }}"
+            },
+            {
+              "id": "9",
+              "name": "YOUTUBE_CAPTION",
+              "type": "string",
+              "value": "={{ $json.output.youtube_caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3360,
+        1808
+      ],
+      "id": "b5df66a7-df91-4f17-bfd4-c5fa5255cdc7",
+      "name": "Set Video Variables1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.API_ENDPOINT }}/v1/projects/{{ $json.PROJECT_ID }}/locations/{{ $json.LOCATION }}/publishers/google/models/{{ $json.MODEL_VERSION }}:predictLongRunning",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"endpoint\": \"projects/nowbuzz/locations/us-central1/publishers/google/models/veo-3.0-generate-preview\",\n  \"instances\": [\n    {\n      \"prompt\": {{ JSON.stringify($json.TEXT_PROMPT) }}\n    }\n  ],\n  \"parameters\": {\n    \"aspectRatio\": \"9:16\",\n    \"sampleCount\": 1,\n    \"durationSeconds\": \"8\",\n    \"personGeneration\": \"allow_all\",\n    \"addWatermark\": false,\n    \"includeRaiReason\": true,\n    \"generateAudio\": true\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3040,
+        1808
+      ],
+      "id": "f5c588f7-0d53-4f92-8919-f45483ad49f3",
+      "name": "Vertex AI — Veo3 Generate1",
+      "credentials": {
+        "googleApi": {
+          "id": "kWBnbuAsQ8pii1Dd",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Set Video Variables1').item.json.API_ENDPOINT }}/v1/projects/{{ $('Set Video Variables1').item.json.PROJECT_ID }}/locations/{{ $('Set Video Variables1').item.json.LOCATION }}/publishers/google/models/{{ $('Set Video Variables1').item.json.MODEL_VERSION }}:fetchPredictOperation",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operationName\": \"{{ $json.name }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3040,
+        2288
+      ],
+      "id": "796afb2a-051d-4313-9c2c-e111604a48c6",
+      "name": "Vertex AI — Fetch Result1",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleApi": {
+          "id": "kWBnbuAsQ8pii1Dd",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "response.videos[0].bytesBase64Encoded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -3664,
+        2288
+      ],
+      "id": "1e5acefa-66c9-4f0c-b6b1-b07641ebbe27",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "name": "=Pool_{{ $('Set Video Variables1').item.json.POOL_SHAPE.replace(/\\s+/g, '_') }}_{{ $now.toMillis() }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1j1Idp63oxZhxSC6UfSJrYUqiYSPZzaoG",
+          "mode": "list",
+          "cachedResultName": "yout",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1j1Idp63oxZhxSC6UfSJrYUqiYSPZzaoG"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4000,
+        2528
+      ],
+      "id": "73fef50e-a4b7-43af-bcf8-a0994a074d7b",
+      "name": "Upload to Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "a77jcVR5YJZWe6zP",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Set Video Variables1').item.json.YOUTUBE_TITLE }}",
+        "regionCode": "AZ",
+        "categoryId": "24",
+        "options": {
+          "description": "={{ $('Set Video Variables1').item.json.YOUTUBE_CAPTION }}",
+          "tags": "={{ $('Set Video Variables1').item.json.YOUTUBE_CAPTION }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -4000,
+        2768
+      ],
+      "id": "76e68edc-31be-4db0-8203-ccfefb7c534b",
+      "name": "Upload to YouTube1",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "mZBGi4H5IdiPgkwL",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -3664,
+        1568
+      ],
+      "id": "0451622c-3eb3-4397-9e49-46fae3df4a90",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SRoMn5qs8d7lguCY",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Use the tool to think about something."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        1568
+      ],
+      "id": "804b1eaf-3717-4c1d-8485-37611680b685",
+      "name": "Think1"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841449238821867/media",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "image_url",
+                "value": "https://drive.google.com/file/d/1B5JykPoj3gndcSs-s9BOWdsewftckVKN/view?usp=sharing"
+              },
+              {
+                "name": "caption",
+                "value": "posted by ai"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -2752,
+        3504
+      ],
+      "id": "c816c8ae-b206-494e-a24d-1c6395db963f",
+      "name": "photo",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2496,
+        3712
+      ],
+      "id": "69ef79ef-a4ac-4796-b4bf-34af0acebbe5",
+      "name": "Wait",
+      "webhookId": "8cd2354a-3890-4bfb-8f6c-b352521dba5e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0ce3f4fe-752d-4bef-947f-6257a9811085",
+              "leftValue": "={{ $('reels status checker').item.json.status_code }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2320,
+        3712
+      ],
+      "id": "0fc54d6c-61e4-45ef-a12a-42d3af185553",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "=17841449238821867/media_publish",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -2128,
+        3504
+      ],
+      "id": "fc29d8e3-5b91-4a92-a7dc-1bfdd38871b6",
+      "name": "publisher",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "instagram publisher(photo)",
+        "height": 720,
+        "width": 1120
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3072,
+        3312
+      ],
+      "id": "a4261df1-b139-4a98-b3d1-f54f7a757d85",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841449238821867/media",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "REELS"
+              },
+              {
+                "name": "caption",
+                "value": "posted by ai"
+              },
+              {
+                "name": "video_url",
+                "value": "https://limewire.com/d/NK6EZ#M6uzmBmYV7"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -2960,
+        3712
+      ],
+      "id": "a16c287f-ac3c-4de1-a53c-aaabee4467ca",
+      "name": "reels",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{ $json.id }}",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "status_code"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -2736,
+        3712
+      ],
+      "id": "fa7015dd-f1d8-4a34-bebf-80c7603d0d64",
+      "name": "reels status checker",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Used Shapes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        []
+      ]
+    },
+    "Read Used Shapes": {
+      "main": [
+        [
+          {
+            "node": "Collect All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect All Rows": {
+      "main": [
+        [
+          {
+            "node": "Pool Idea + Prompt Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 4 min": {
+      "main": [
+        [
+          {
+            "node": "Vertex AI — Fetch Result1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Ready?": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 1 min retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 min retry": {
+      "main": [
+        [
+          {
+            "node": "Vertex AI — Fetch Result1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pool Idea + Prompt Agent1": {
+      "main": [
+        [
+          {
+            "node": "Set Video Variables1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pool Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Pool Idea + Prompt Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Video Variables1": {
+      "main": [
+        [
+          {
+            "node": "Vertex AI — Veo3 Generate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vertex AI — Veo3 Generate1": {
+      "main": [
+        [
+          {
+            "node": "Wait 4 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vertex AI — Fetch Result1": {
+      "main": [
+        [
+          {
+            "node": "Video Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Save Shape to Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload to Drive1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload to YouTube1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Pool Idea + Prompt Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Pool Idea + Prompt Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "photo": {
+      "main": [
+        [
+          {
+            "node": "publisher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "reels status checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reels": {
+      "main": [
+        [
+          {
+            "node": "reels status checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reels status checker": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube1": {
+      "main": [
+        [
+          {
+            "node": "reels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7b37bb9b-8e6f-479d-8dfe-a97956f69e4d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "aaTyAlwvLUJW1frO",
+  "tags": []
+}

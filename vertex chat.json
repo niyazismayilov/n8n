@@ -1,0 +1,145 @@
+{
+  "name": "vertex chat",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "vertex",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "989a8ade-8b31-4bae-b61c-f3cc7859f198",
+      "name": "Webhook",
+      "webhookId": "2223d28c-98b0-4681-be42-a15b712b593e"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1cSAZtvA9Vy7edHAN9HqGMukN6uKs3iDbszfHVnu4jxc",
+          "mode": "list",
+          "cachedResultName": "vertex chat",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cSAZtvA9Vy7edHAN9HqGMukN6uKs3iDbszfHVnu4jxc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cSAZtvA9Vy7edHAN9HqGMukN6uKs3iDbszfHVnu4jxc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "graph_api",
+              "displayName": "graph_api",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gemini_api",
+              "displayName": "gemini_api",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "eba80a21-4e63-4460-9d70-9b85ee3efdfd",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bGo98N1Uu859lToR",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "633ac4bb-26ad-4e82-acb2-10c6b30c10bd",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "853c6631-1657-4de6-bcef-516347144d2e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "YK0a8Hnoe9cDLJiX",
+  "tags": []
+}

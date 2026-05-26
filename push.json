@@ -1,0 +1,290 @@
+{
+  "name": "push",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "faq",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "9df429a4-d885-4e23-8541-32fd5c21161c",
+      "name": "Webhook",
+      "webhookId": "b3f6c6cf-dadd-408f-8432-86a965247b2e"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an pus30 FAQ and email sender assistant.\nYour job is to read and use that FAQ file to respond to user questions accurately and if user asked for any task you need to done task.\nTask can be send email.\n\nInstructions:\n- Always use the information in the FAQ file to answer questions.\n- If the file contains relevant information, summarize or quote it clearly.\n- If the user’s question is not answered in the file, reply:\n  \"Sorry, I couldn’t find that information in the FAQ document.\"\n- Do not invent or assume answers that are not mentioned in the file.\n- Be friendly, professional, and concise.\n- If the file is updated, use the latest version automatically.\n_ If user asked for send email you need to use \"Emails\" node for checking emails and find exact email address.\n- Never show all email address to user, from message fetch name or address and show exact email.\n- For sending emails use \"Sender\" node.\n- If you not found any emails user said, dont send email anyone.\n- If you not found any data in the faq document, use \"HTTP Request1\" node.\n-Always use \"HTTP Request\" node for answer to user!!!\n-Always use \"Http2\" node for answer to user!!!\n{{ $json.body.message }}\nyou need to check HTTP Request node for answering the questions of user.\nYou need to answer only in Azerbaijani language!",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        -32
+      ],
+      "id": "53c2bb35-3f86-477d-8835-40c425d82616",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        384,
+        0
+      ],
+      "id": "d7427e8e-e670-4ceb-b71e-e854b072d5fb",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "url": "https://push30.az/faq",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -112,
+        352
+      ],
+      "id": "b541af3e-006b-4b95-ae58-ea197e5336e0",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "https://push.chaitech.info/emails.php",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        160,
+        432
+      ],
+      "id": "e1c813c8-13a9-47ab-bb66-34283162ea87",
+      "name": "Emails"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        176,
+        224
+      ],
+      "id": "fbaa0298-afcf-4a88-b084-5d1be1d8ff7e",
+      "name": "Sender",
+      "webhookId": "526ffeca-aba8-45da-baf5-c9f1f10e74e5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JBynDlRjgsY05Rbl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.message }}",
+        "sessionTTL": 10,
+        "contextWindowLength": 1000
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        -224,
+        368
+      ],
+      "id": "4f37ce38-01d2-428c-9ef5-bbad052cb9a4",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "XoFKzXGMxlAlMevF",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        224
+      ],
+      "id": "d7fcbfc4-520a-44c2-bbaf-f37faee2d15a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "aFtZfGzaHEUgJ7tR",
+          "name": "chattest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        224
+      ],
+      "id": "6e9137f6-6b74-43d6-b25c-7610d7632b84",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "lYYdnpGU1hJNBo2m",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://push.chaitech.info/faq.php",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        16,
+        384
+      ],
+      "id": "4c04648f-03b8-41cb-af9d-47456647e1e1",
+      "name": "Http2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emails": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sender": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Http2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a16ed0b-ee9d-48f1-8230-262b1903a508",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "9uDbdfx1uukkecaH",
+  "tags": []
+}

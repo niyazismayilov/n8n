@@ -1,0 +1,333 @@
+{
+  "name": "Intake workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "191306f1-a0be-4717-81c9-cfc55d81504c",
+      "name": "Webhook (intake)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -816,
+        48
+      ],
+      "webhookId": "a2734f58-fbb8-4f10-b8df-864e3ea86a00"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0] ?? { json: {} };\nconst body = item.json?.body ?? item.json;\n\nconst user_id = (body.user_id || '').toString();\nconst jd_text = (body.jd_text || '').toString().replace(/[\\r\\n]+/g, ' ').trim();\nconst user_email = (body.user_email || '').toString();\n\nconst errors = [];\nif (!user_id) errors.push('Missing user_id');\nif (!jd_text || jd_text.length <= 50) errors.push('Invalid job description');\n\nreturn [{\n  json: {\n    valid: errors.length === 0,\n    errors,\n    user_id,\n    user_email,\n    jd_text,\n  },\n}];"
+      },
+      "id": "47fc0c85-03bf-4445-a14a-2ce5f7045f5d",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c_valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "isTrue"
+              }
+            },
+            {
+              "id": "84f40898-213b-4ff7-ae4f-41b164bee1a1",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "1c3f39c1-9a79-4b1d-b4d1-fd7465a1f847",
+      "name": "Is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: ($json.errors && $json.errors.includes('Unauthorized')) ? 'Unauthorized' : 'Invalid job description' } }}",
+        "options": {
+          "responseCode": "={{ ($json.errors && $json.errors.includes('Unauthorized')) ? 401 : 400 }}",
+          "enableStreaming": false
+        }
+      },
+      "id": "7f638e2f-2503-404a-af70-41dcd4b56bef",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -144,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.1,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a job description parser. Extract structured data from job descriptions. Return ONLY valid JSON with no markdown, no code fences, no explanation.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Extract the following from this job description and return as JSON: { role_title, company (if mentioned, else 'Not specified'), seniority_level (Junior/Mid/Senior/Lead/Executive), industry, top_5_skills: [], years_experience_required }. Job description:{{ $json.jd_text.replace(/\\n/g, ' ').replace(/\"/g, '\\\\\"') }} \"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "6db06bd7-a041-4784-a6cd-edf3e4a87fb2",
+      "name": "Extract JD Data (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -144,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = items[0].json;\n\nfunction extractContent(x) {\n  if (!x) return '';\n  if (typeof x === 'string') return x;\n  if (x.choices && x.choices[0]?.message?.content) return x.choices[0].message.content;\n  if (x.message?.content) return x.message.content;\n  if (x.content?.[0]?.text) return x.content[0].text;\n  return '';\n}\n\nlet raw = extractContent(original);\nraw = raw.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();\n\nlet extracted;\ntry {\n  extracted = JSON.parse(raw);\n} catch (e) {\n  throw new Error('Failed to parse Extract JD Data response as JSON. Raw: ' + raw);\n}\n\nreturn [\n  {\n    json: {\n      user_id: original.user_id,\n      user_email: original.user_email,\n      jd_text: original.jd_text,\n      ...extracted,\n    },\n  },\n];"
+      },
+      "id": "bf679885-3efc-4ce3-b3a3-af727b6f87d0",
+      "name": "Parse Extract Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.7,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert interview coach with 15 years experience. Generate highly specific, role-relevant interview questions. Return ONLY a valid JSON array, no markdown, no code fences.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate exactly 12 interview questions for this role.\\nRole: {{ $json.role_title }}\\nSeniority:{{ $json.seniority_level }} \\nRequired skills: {{ $json.top_5_skills }}\\n\\nReturn a JSON array where each item is:\\n{ id: number, type: 'behavioral'|'technical'|'situational'|'culture', question: string, ideal_keywords: string[], difficulty: 'easy'|'medium'|'hard' }.\\nDistribution: 4 behavioral, 4 technical, 2 situational, 2 culture.\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "dd4d0873-6cd2-4d4e-a069-1a1883ec1c62",
+      "name": "Generate Question Bank (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        304,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = items[0].json;\n\nfunction extractContent(x) {\n  if (!x) return '';\n  if (typeof x === 'string') return x;\n  if (x.choices && x.choices[0]?.message?.content) return x.choices[0].message.content;\n  if (x.message?.content) return x.message.content;\n  if (x.content?.[0]?.text) return x.content[0].text;\n  return '';\n}\n\nlet raw = extractContent(original);\nraw = raw.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();\n\nlet questions;\ntry {\n  questions = JSON.parse(raw);\n} catch (e) {\n  throw new Error('Failed to parse Question Bank response as JSON. Raw: ' + raw);\n}\n\nconst session_id = 'sess_' + Date.now();\nconst session = {\n  session_id,\n  user_id: $('Validate Input').first().json.user_id,\n  user_email: $('Validate Input').first().json.user_email,\n  jd_text: $('Validate Input').first().json.jd_text,\n  extracted_data: {\n    role_title: original.role_title,\n    company: original.company,\n    seniority_level: original.seniority_level,\n    industry: original.industry,\n    top_5_skills: original.top_5_skills,\n    years_experience_required: original.years_experience_required,\n  },\n  questions,\n  status: 'ready',\n  created_at: new Date().toISOString(),\n  overall_score: null,\n  completed_at: null,\n};\n\nreturn [{ json: session }];"
+      },
+      "id": "9b0ea3d2-944f-4aa2-a989-dfa96cd762f6",
+      "name": "Parse Questions + Build Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "sessions",
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": "="
+      },
+      "id": "06a0fd3e-c7f9-4f7f-8e5e-2aabb2096599",
+      "name": "Save Session (Supabase)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        752,
+        -48
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "hsfTOTF1yHDRCkpc",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Stores extracted_data/questions as JSONB via auto-map. Ensure sessions.user_id is UUID."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, session_id: $json.session_id, extracted: $json.extracted_data, questions: $json.questions, total_questions: 12 } }}",
+        "options": {
+          "responseCode": 200,
+          "enableStreaming": false
+        }
+      },
+      "id": "7ee8432f-bc7f-4fee-9a50-faff9b706bd0",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        976,
+        -48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (intake)": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is valid?": {
+      "main": [
+        [
+          {
+            "node": "Extract JD Data (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract JD Data (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse Extract Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extract Response": {
+      "main": [
+        [
+          {
+            "node": "Generate Question Bank (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Question Bank (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse Questions + Build Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Questions + Build Session": {
+      "main": [
+        [
+          {
+            "node": "Save Session (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Session (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fdc0c45c-2659-4e22-ac66-eece3331eb49",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "D1Mnbq5j3q9qoUvg",
+  "tags": []
+}

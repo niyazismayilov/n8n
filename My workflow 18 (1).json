@@ -1,0 +1,665 @@
+{
+  "name": "My workflow 18",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -880
+      ],
+      "id": "89cc7e9d-35e2-42c6-ba4a-22df2bc2f8b6",
+      "name": "When clicking ‘Execute workflow’",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841449238821867/media",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "image_url",
+                "value": "https://drive.google.com/file/d/1B5JykPoj3gndcSs-s9BOWdsewftckVKN/view?usp=sharing"
+              },
+              {
+                "name": "caption",
+                "value": "posted by ai"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        -1008
+      ],
+      "id": "c8037896-d349-4de5-90db-75fb9b87720c",
+      "name": "photo",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2912,
+        -800
+      ],
+      "id": "f7358f18-358f-4756-ae5e-56946d2e984a",
+      "name": "Wait",
+      "webhookId": "8cd2354a-3890-4bfb-8f6c-b352521dba5e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0ce3f4fe-752d-4bef-947f-6257a9811085",
+              "leftValue": "={{ $('reels status checker').item.json.status_code }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3088,
+        -800
+      ],
+      "id": "3e520995-1172-4bac-b7c7-37943349da42",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "=17841449238821867/media_publish",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        -1008
+      ],
+      "id": "e3c637c7-f5e5-4485-b181-042900ea88c0",
+      "name": "publisher",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "instagram publisher(photo)",
+        "height": 720,
+        "width": 1120
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2336,
+        -1200
+      ],
+      "id": "96826c00-3e77-491f-91ee-4fdb317e7a28",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2768,
+        -1840
+      ],
+      "id": "1c0c3512-1e2c-4cd4-ab6f-c0ba72a62edc",
+      "name": "Send a photo message",
+      "webhookId": "1305e2c2-fc1a-4a30-acd3-a35aff950cf2",
+      "credentials": {
+        "telegramApi": {
+          "id": "9zLQUl41y3JuhGRv",
+          "name": "image generator"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": \"{{ $json.message.text }}\",\n  \"options\": {\n    \"wait_for_model\": true\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2224,
+        -1776
+      ],
+      "id": "644c619b-9303-40a0-bc40-91495771e9ca",
+      "name": "text to image",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.poe.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 39LaN5M1ihBBcrB9n1TvGGHIBILV1REEi106t_xGcwk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"flux-1-schnell-fw\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message.text }}\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2448,
+        -1680
+      ],
+      "id": "7b7b2366-54f2-4d1a-92c2-6b5ba64ffaa7",
+      "name": "HTTP Request",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.item.json.choices[0].message.content;\n// Extract URL from the content\nconst urlMatch = content.match(/https:\\/\\/[^\\s)]+\\.jpg/);\nconst imageUrl = urlMatch ? urlMatch[0] : null;\n\nreturn {\n  imageUrl: imageUrl,\n  fullContent: content\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        -1680
+      ],
+      "id": "8cb6ff50-a1ca-44bf-a697-5505c09ee215",
+      "name": "Code in JavaScript",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2896,
+        -1680
+      ],
+      "id": "a912eaa2-052b-4d75-9852-facfdaab2dc2",
+      "name": "HTTP Request2",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3120,
+        -1776
+      ],
+      "id": "725f9347-3115-4a08-b93d-63a6766fd4ef",
+      "name": "Send a photo message1",
+      "webhookId": "1305e2c2-fc1a-4a30-acd3-a35aff950cf2",
+      "credentials": {
+        "telegramApi": {
+          "id": "9zLQUl41y3JuhGRv",
+          "name": "image generator"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3120,
+        -1584
+      ],
+      "id": "3eb1ff2e-ef6b-41d0-84bb-c1f2ee6cf648",
+      "name": "HTTP Request3",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "Photo creator",
+        "height": 720,
+        "width": 1408
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1904,
+        -2096
+      ],
+      "id": "ef022116-1cc8-4704-babd-5f4279bbab55",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Content finder.",
+        "height": 720,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -1232
+      ],
+      "id": "919db83e-ac04-4239-80a3-fddd435ead3a",
+      "name": "Sticky Note2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841449238821867/media",
+        "edge": "=",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "REELS"
+              },
+              {
+                "name": "caption",
+                "value": "posted by ai"
+              },
+              {
+                "name": "video_url",
+                "value": "https://limewire.com/d/NK6EZ#M6uzmBmYV7"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        -800
+      ],
+      "id": "bd3d9640-da54-4985-9267-77574bfc91b3",
+      "name": "reels",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{ $json.id }}",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "status_code"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        -800
+      ],
+      "id": "f20b6772-5b4c-4276-bf0a-0f02b3275c9d",
+      "name": "reels status checker",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "UmgrYOrhWao0zEIv",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "=image_{{$now.format('yyyy-MM-dd_HH-mm')}}.png",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2432,
+        -1872
+      ],
+      "id": "4ecb0d6a-15f2-4fa2-b6b3-d7cb70aca686",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "LwAgKKGVYMKOFCku",
+          "name": "Google Drive account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -720
+      ],
+      "id": "64c9e04b-6ed0-4228-a227-494b98ecfe7a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SRoMn5qs8d7lguCY",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a viral meme creator.\n\nToday in Azerbaijan, people mostly joke about:\n- traffic jams\n- rising prices\n- bad internet\n- delivery delays\n- weather problems\n\nCreate ONE funny and relatable meme topic.\nRules:\n- English only\n- Max 4 words\n- Everyday life humor\n- Relatable, not generic\n- Meme-ready\n- No explanations\n\nReturn ONLY the title.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -32,
+        -928
+      ],
+      "id": "ab28ae7b-3418-49c4-a3fa-6f82a78d4b58",
+      "name": "AI Agent",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "path": "46f39b56-88f1-4b3a-a8e7-5a6ec09cad1d",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        2048,
+        -1072
+      ],
+      "id": "80917d57-f194-407c-bf9f-957f13825c76",
+      "name": "Webhook",
+      "webhookId": "46f39b56-88f1-4b3a-a8e7-5a6ec09cad1d"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "photo": {
+      "main": [
+        [
+          {
+            "node": "publisher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "publisher": {
+      "main": [
+        []
+      ]
+    },
+    "text to image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reels": {
+      "main": [
+        [
+          {
+            "node": "reels status checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reels status checker": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "reels status checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0e7edbbb-ce61-4833-8072-27a7917df962",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "geDVsqOd7x1MtrGY",
+  "tags": []
+}

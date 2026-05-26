@@ -1,0 +1,309 @@
+{
+  "name": "Reddit Reels - SIMPLE FREE Version",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f09ab0ff-933e-4c68-b0c1-586ac289c23d",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.reddit.com/r/AmITheAsshole/top.json?limit=5&t=day",
+        "options": {}
+      },
+      "id": "88dc74cf-d38f-4796-9e27-b3f91336ec7a",
+      "name": "Fetch Reddit Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        3792,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get first good post\nconst posts = $input.all()[0].json.data.children;\n\nfor (const post of posts) {\n  const data = post.data;\n  \n  if (!data.is_video && \n      data.selftext.length >= 200 && \n      data.selftext.length <= 2000 && \n      !data.over_18) {\n    \n    let text = data.selftext.substring(0, 500);\n    text = text.replace(/[\\[\\]\\*]/g, '');\n    \n    return [{\n      json: {\n        title: data.title.substring(0, 100),\n        text: text,\n        id: data.id\n      }\n    }];\n  }\n}\n\nreturn [];"
+      },
+      "id": "0e40903b-de4d-4577-93a0-6e1502f901b7",
+      "name": "Get First Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        3984,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.pexels.com/videos/search?query=minecraft&per_page=3&orientation=portrait",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "c2028e68-dc85-4856-a840-cf351a9f68b9",
+      "name": "Fetch Pexels Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        4192,
+        832
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TEvK3A3yv63F6eI6",
+          "name": "Header Auth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $input.first().json;\nconst videos = $input.last().json.videos;\nconst video = videos[0].video_files.find(v => v.width === 1080) || videos[0].video_files[0];\n\nreturn [{\n  json: {\n    title: prevData.title,\n    text: prevData.text,\n    id: prevData.id,\n    videoUrl: video.link\n  }\n}];"
+      },
+      "id": "a9c95ba5-4148-42b5-b792-3cb25068986c",
+      "name": "Combine Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        4384,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\nconst items = $input.all();\n\nfor (const item of items) {\n  const text = `${item.json.title}. ${item.json.text}`;\n  const videoId = item.json.id;\n  \n  // Escape quotes in text\n  const escapedText = text.replace(/\"/g, '\\\\\"').replace(/'/g, \"'\\\\''\" );\n  \n  // Generate TTS audio\n  const command = `python3 /root/n8n-scripts/tts.py \"${escapedText}\" \"/tmp/${videoId}_audio.mp3\"`;\n  \n  try {\n    const output = execSync(command, { encoding: 'utf8' });\n    console.log('TTS Output:', output);\n    item.json.audioFile = `/tmp/${videoId}_audio.mp3`;\n  } catch (error) {\n    console.error('Error generating audio:', error.message);\n    throw new Error('TTS generation failed: ' + error.message);\n  }\n}\n\nreturn items;"
+      },
+      "id": "3ec50804-7ede-47d6-8b77-031e999fdfb7",
+      "name": "Generate Audio (TTS)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4576,
+        832
+      ],
+      "notes": "Uses FREE gTTS to create voiceover"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "f163ed48-deca-4c0f-8c4f-56b5a428d727",
+      "name": "Download Background Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4768,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $node[\"Combine Data\"].json.id }}_bg.mp4",
+        "options": {}
+      },
+      "id": "f6d7988c-839c-4240-ad33-cfb9fb4a15bc",
+      "name": "Save Background Video",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        4960,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\nconst items = $input.all();\nconst combineData = $node[\"Combine Data\"].json;\n\nconst videoId = combineData.id;\nconst title = combineData.title.replace(/'/g, \"'\\\\''\"); // Escape single quotes for bash\n\n// Run video creation script\nconst command = `/root/n8n-scripts/make_video.sh \"${videoId}\" \"${title}\"`;\n\nconsole.log('Running command:', command);\n\ntry {\n  const output = execSync(command, { encoding: 'utf8' });\n  console.log('Video creation output:', output);\n  \n  items[0].json.finalVideo = `/tmp/${videoId}_final.mp4`;\n} catch (error) {\n  console.error('Error creating video:', error.message);\n  throw new Error('Video creation failed: ' + error.message);\n}\n\nreturn items;"
+      },
+      "id": "7516843d-8574-400d-8f41-b92e7907c8b0",
+      "name": "Create Final Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5152,
+        832
+      ],
+      "notes": "Combines audio + video with FFmpeg"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4b7f3e1e-2b54-4c2d-8236-edf2b268481a",
+      "name": "Read Final Video",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        5344,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\nconst combineData = $node[\"Combine Data\"].json;\nconst videoId = combineData.id;\n\n// Cleanup temp files\nconst command = `rm -f /tmp/${videoId}_*`;\n\ntry {\n  execSync(command);\n  console.log('Cleanup completed - temp files deleted');\n} catch (error) {\n  console.error('Cleanup error:', error.message);\n}\n\nreturn $input.all();"
+      },
+      "id": "58b9f950-c5fb-45e4-b900-f4523570c89a",
+      "name": "Cleanup Temp Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5536,
+        832
+      ],
+      "notes": "Deletes temporary audio and video files"
+    },
+    {
+      "parameters": {
+        "content": "=## 🎬 Reddit Reels - Complete Workflow\n\n**Status: Ready to generate videos!**\n\n**What this does:**\n1. Fetches trending Reddit posts\n2. Gets background video from Pexels\n3. Generates AI voiceover (FREE with gTTS)\n4. Creates vertical video with title overlay\n5. Outputs ready-to-post reel\n\n**Requirements:**\n- ✅ gTTS installed: `pip install gtts --break-system-packages`\n- ✅ FFmpeg installed: `sudo apt install ffmpeg`\n- ✅ Scripts in `/root/n8n-scripts/`\n- ✅ Pexels API key added\n\n**To enable child_process:**\nAdd to n8n environment:\n`NODE_FUNCTION_ALLOW_BUILTIN=child_process`\n\n**Output:** `/tmp/[ID]_final.mp4`\n**Cost:** $0/month (100% FREE!)",
+        "height": 464,
+        "width": 389
+      },
+      "id": "d9b91cab-04e7-45e3-955d-e7b7c9132b99",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        1040
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Fetch Reddit Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Reddit Posts": {
+      "main": [
+        [
+          {
+            "node": "Get First Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get First Post": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pexels Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pexels Video": {
+      "main": [
+        [
+          {
+            "node": "Combine Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio (TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio (TTS)": {
+      "main": [
+        [
+          {
+            "node": "Download Background Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Background Video": {
+      "main": [
+        [
+          {
+            "node": "Save Background Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Background Video": {
+      "main": [
+        [
+          {
+            "node": "Create Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Final Video": {
+      "main": [
+        [
+          {
+            "node": "Read Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Final Video": {
+      "main": [
+        [
+          {
+            "node": "Cleanup Temp Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d057f9b4-f895-41e2-9faa-880feede2391",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "cJBEtOZL9-FICYXGxOppE",
+  "tags": []
+}

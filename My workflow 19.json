@@ -1,0 +1,792 @@
+{
+  "name": "My workflow 19",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1008,
+        160
+      ],
+      "id": "bc98b397-b5e2-4668-89df-70d6987cbb5a",
+      "name": "Telegram Trigger",
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "credentials": {
+        "telegramApi": {
+          "id": "ysZlOSMsdtFmr7yl",
+          "name": "Sis chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "🚀 Mövzu alındı! AI video yaradılır...\n\n📸 Şəkillər generate edilir...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -768,
+        160
+      ],
+      "id": "645a6071-e802-4a96-9ca2-786769be84a2",
+      "name": "Notify: Starting",
+      "webhookId": "4c601323-8fb8-4736-a460-5ba26babe88e",
+      "credentials": {
+        "telegramApi": {
+          "id": "ysZlOSMsdtFmr7yl",
+          "name": "Sis chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"narration\": {\n      \"type\": \"string\",\n      \"description\": \"The full spoken narration script (60-90 words, conversational)\"\n    },\n    \"scene1_prompt\": {\n      \"type\": \"string\",\n      \"description\": \"FLUX image prompt for scene 1 (cinematic, detailed, no text)\"\n    },\n    \"scene2_prompt\": {\n      \"type\": \"string\",\n      \"description\": \"FLUX image prompt for scene 2 (cinematic, detailed, no text)\"\n    },\n    \"scene3_prompt\": {\n      \"type\": \"string\",\n      \"description\": \"FLUX image prompt for scene 3 (cinematic, detailed, no text)\"\n    },\n    \"videoTitle\": {\n      \"type\": \"string\",\n      \"description\": \"YouTube title (max 60 chars, curiosity-driven)\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"2-sentence YouTube description + 1 call to action\"\n    },\n    \"tags\": {\n      \"type\": \"string\",\n      \"description\": \"5 comma-separated hashtags\"\n    }\n  },\n  \"required\": [\"narration\", \"scene1_prompt\", \"scene2_prompt\", \"scene3_prompt\", \"videoTitle\", \"description\", \"tags\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        512
+      ],
+      "id": "6bca3fe7-7f64-47b5-95f4-5f3b69217241",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=<Instruction>\nYou are a viral YouTube Shorts scriptwriter AND a cinematic AI video director.\n\nYour task:\n1. Write a short narration script (60-90 words) for the given topic.\n   - Hook in first 3 seconds\n   - Conversational, fast-paced, simple language\n   - Strong call-to-action at the end\n\n2. Generate 3 distinct cinematic image prompts for FLUX AI image generator.\n   Each prompt should:\n   - Be ultra-detailed and photorealistic\n   - Describe lighting, camera angle, mood, environment\n   - NOT contain any text, watermarks, or logos\n   - Be visually stunning and relevant to the topic\n   - Be different from each other (wide shot, close-up, action shot)\n\n3. Generate YouTube metadata:\n   - Title: curiosity-driven, max 60 chars\n   - Description: 2 sentences + call to action\n   - Tags: 5 hashtags\n\nReturn everything as structured JSON.\n</Instruction>\n\n<topic>\n{{ $('Telegram Trigger').item.json.message.text }}\n</topic>",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -512,
+        160
+      ],
+      "id": "5a40d1c6-4a1a-4dcf-a0b3-f7b60965cfb4",
+      "name": "Generate Script & Prompts"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"CheckpointLoaderSimple\",\n      \"inputs\": {\n        \"ckpt_name\": \"flux1-dev.safetensors\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($json.output.scene1_prompt) }},\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"3\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"blurry, low quality, text, watermark, ugly, deformed\",\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"4\": {\n      \"class_type\": \"EmptyLatentImage\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"batch_size\": 1\n      }\n    },\n    \"5\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 7,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"normal\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"2\", 0],\n        \"negative\": [\"3\", 0],\n        \"latent_image\": [\"4\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"VAEDecode\",\n      \"inputs\": {\n        \"samples\": [\"5\", 0],\n        \"vae\": [\"1\", 2]\n      }\n    },\n    \"7\": {\n      \"class_type\": \"SaveImage\",\n      \"inputs\": {\n        \"filename_prefix\": \"scene1\",\n        \"images\": [\"6\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-workflow\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        0
+      ],
+      "id": "19088baf-56df-4a28-9d68-27ba87f6c47c",
+      "name": "Generate Image: Scene 1 (ComfyUI)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"CheckpointLoaderSimple\",\n      \"inputs\": {\n        \"ckpt_name\": \"flux1-dev.safetensors\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.scene2_prompt) }},\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"3\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"blurry, low quality, text, watermark, ugly, deformed\",\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"4\": {\n      \"class_type\": \"EmptyLatentImage\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"batch_size\": 1\n      }\n    },\n    \"5\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 7,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"normal\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"2\", 0],\n        \"negative\": [\"3\", 0],\n        \"latent_image\": [\"4\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"VAEDecode\",\n      \"inputs\": {\n        \"samples\": [\"5\", 0],\n        \"vae\": [\"1\", 2]\n      }\n    },\n    \"7\": {\n      \"class_type\": \"SaveImage\",\n      \"inputs\": {\n        \"filename_prefix\": \"scene2\",\n        \"images\": [\"6\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-workflow\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        160
+      ],
+      "id": "82a46f87-f649-4e28-bf2e-8b2079fdc27c",
+      "name": "Generate Image: Scene 2 (ComfyUI)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"CheckpointLoaderSimple\",\n      \"inputs\": {\n        \"ckpt_name\": \"flux1-dev.safetensors\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.scene3_prompt) }},\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"3\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"blurry, low quality, text, watermark, ugly, deformed\",\n        \"clip\": [\"1\", 1]\n      }\n    },\n    \"4\": {\n      \"class_type\": \"EmptyLatentImage\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"batch_size\": 1\n      }\n    },\n    \"5\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 7,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"normal\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"2\", 0],\n        \"negative\": [\"3\", 0],\n        \"latent_image\": [\"4\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"VAEDecode\",\n      \"inputs\": {\n        \"samples\": [\"5\", 0],\n        \"vae\": [\"1\", 2]\n      }\n    },\n    \"7\": {\n      \"class_type\": \"SaveImage\",\n      \"inputs\": {\n        \"filename_prefix\": \"scene3\",\n        \"images\": [\"6\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-workflow\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        304
+      ],
+      "id": "5463194b-81cf-4cc1-88bf-dabb0cdba097",
+      "name": "Generate Image: Scene 3 (ComfyUI)"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        160
+      ],
+      "id": "16ddabcc-2534-4b94-8995-7bedcbad49ef",
+      "name": "Wait: Images Rendering (30s)",
+      "webhookId": "67f7f2a3-e397-47ec-9d59-21039ddf3978"
+    },
+    {
+      "parameters": {
+        "url": "=http://YOUR_SERVER_IP:8188/history/{{ $('Generate Image: Scene 1 (ComfyUI)').item.json.prompt_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1b1c879e-492c-460b-b773-a40b6e2f0494",
+      "name": "Get Image 1 Path"
+    },
+    {
+      "parameters": {
+        "url": "=http://YOUR_SERVER_IP:8188/history/{{ $('Generate Image: Scene 2 (ComfyUI)').item.json.prompt_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        160
+      ],
+      "id": "408bf121-cfe6-483a-b1af-11c2e21b3e06",
+      "name": "Get Image 2 Path"
+    },
+    {
+      "parameters": {
+        "url": "=http://YOUR_SERVER_IP:8188/history/{{ $('Generate Image: Scene 3 (ComfyUI)').item.json.prompt_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        304
+      ],
+      "id": "b0ecdea5-f5a4-467d-8c60-a5c9aba22c6a",
+      "name": "Get Image 3 Path"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "✅ Şəkillər hazır! 🎬 Video kliplər yaradılır (Wan2.1)...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        160
+      ],
+      "id": "0aa66a99-baad-4e22-b53b-2caad22e832e",
+      "name": "Notify: Generating Videos",
+      "webhookId": "4db8610e-0ba7-4673-8d4d-484e451fb39e",
+      "credentials": {
+        "telegramApi": {
+          "id": "ysZlOSMsdtFmr7yl",
+          "name": "Sis chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"UNETLoader\",\n      \"inputs\": {\n        \"unet_name\": \"wan2.1_t2v_1.3B_fp16.safetensors\",\n        \"weight_dtype\": \"fp8_e4m3fn\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPLoader\",\n      \"inputs\": {\n        \"clip_name\": \"umt5_xxl_fp8_e4m3fn_scaled.safetensors\",\n        \"type\": \"wan\"\n      }\n    },\n    \"3\": {\n      \"class_type\": \"VAELoader\",\n      \"inputs\": {\n        \"vae_name\": \"wan_2.1_vae.safetensors\"\n      }\n    },\n    \"4\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.scene1_prompt + \", cinematic motion, smooth camera movement, 4k, high quality\") }},\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"5\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"low quality, blurry, static, no motion, text\",\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"EmptyHunyuanLatentVideo\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"length\": 49,\n        \"batch_size\": 1\n      }\n    },\n    \"7\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 6,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"linear\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"4\", 0],\n        \"negative\": [\"5\", 0],\n        \"latent_image\": [\"6\", 0]\n      }\n    },\n    \"8\": {\n      \"class_type\": \"VAEDecodeTiled\",\n      \"inputs\": {\n        \"tile_size\": 256,\n        \"overlap\": 64,\n        \"temporal_size\": 64,\n        \"temporal_overlap\": 8,\n        \"samples\": [\"7\", 0],\n        \"vae\": [\"3\", 0]\n      }\n    },\n    \"9\": {\n      \"class_type\": \"VHS_VideoCombine\",\n      \"inputs\": {\n        \"frame_rate\": 16,\n        \"loop_count\": 0,\n        \"filename_prefix\": \"clip1\",\n        \"format\": \"video/h264-mp4\",\n        \"pix_fmt\": \"yuv420p\",\n        \"crf\": 19,\n        \"save_metadata\": false,\n        \"pingpong\": false,\n        \"save_output\": true,\n        \"images\": [\"8\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-wan-clip1\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        0
+      ],
+      "id": "b8f38740-68ee-4922-952f-20c2a1781a0c",
+      "name": "Generate Video Clip 1 (Wan2.1)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"UNETLoader\",\n      \"inputs\": {\n        \"unet_name\": \"wan2.1_t2v_1.3B_fp16.safetensors\",\n        \"weight_dtype\": \"fp8_e4m3fn\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPLoader\",\n      \"inputs\": {\n        \"clip_name\": \"umt5_xxl_fp8_e4m3fn_scaled.safetensors\",\n        \"type\": \"wan\"\n      }\n    },\n    \"3\": {\n      \"class_type\": \"VAELoader\",\n      \"inputs\": {\n        \"vae_name\": \"wan_2.1_vae.safetensors\"\n      }\n    },\n    \"4\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.scene2_prompt + \", cinematic motion, smooth camera movement, 4k, high quality\") }},\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"5\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"low quality, blurry, static, no motion, text\",\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"EmptyHunyuanLatentVideo\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"length\": 49,\n        \"batch_size\": 1\n      }\n    },\n    \"7\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 6,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"linear\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"4\", 0],\n        \"negative\": [\"5\", 0],\n        \"latent_image\": [\"6\", 0]\n      }\n    },\n    \"8\": {\n      \"class_type\": \"VAEDecodeTiled\",\n      \"inputs\": {\n        \"tile_size\": 256,\n        \"overlap\": 64,\n        \"temporal_size\": 64,\n        \"temporal_overlap\": 8,\n        \"samples\": [\"7\", 0],\n        \"vae\": [\"3\", 0]\n      }\n    },\n    \"9\": {\n      \"class_type\": \"VHS_VideoCombine\",\n      \"inputs\": {\n        \"frame_rate\": 16,\n        \"loop_count\": 0,\n        \"filename_prefix\": \"clip2\",\n        \"format\": \"video/h264-mp4\",\n        \"pix_fmt\": \"yuv420p\",\n        \"crf\": 19,\n        \"save_metadata\": false,\n        \"pingpong\": false,\n        \"save_output\": true,\n        \"images\": [\"8\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-wan-clip2\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        160
+      ],
+      "id": "4bbf8bff-8f10-4a7b-a6fb-4f9b471d4144",
+      "name": "Generate Video Clip 2 (Wan2.1)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8188/prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {\n    \"1\": {\n      \"class_type\": \"UNETLoader\",\n      \"inputs\": {\n        \"unet_name\": \"wan2.1_t2v_1.3B_fp16.safetensors\",\n        \"weight_dtype\": \"fp8_e4m3fn\"\n      }\n    },\n    \"2\": {\n      \"class_type\": \"CLIPLoader\",\n      \"inputs\": {\n        \"clip_name\": \"umt5_xxl_fp8_e4m3fn_scaled.safetensors\",\n        \"type\": \"wan\"\n      }\n    },\n    \"3\": {\n      \"class_type\": \"VAELoader\",\n      \"inputs\": {\n        \"vae_name\": \"wan_2.1_vae.safetensors\"\n      }\n    },\n    \"4\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.scene3_prompt + \", cinematic motion, smooth camera movement, 4k, high quality\") }},\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"5\": {\n      \"class_type\": \"CLIPTextEncode\",\n      \"inputs\": {\n        \"text\": \"low quality, blurry, static, no motion, text\",\n        \"clip\": [\"2\", 0]\n      }\n    },\n    \"6\": {\n      \"class_type\": \"EmptyHunyuanLatentVideo\",\n      \"inputs\": {\n        \"width\": 576,\n        \"height\": 1024,\n        \"length\": 49,\n        \"batch_size\": 1\n      }\n    },\n    \"7\": {\n      \"class_type\": \"KSampler\",\n      \"inputs\": {\n        \"seed\": {{ Math.floor(Math.random() * 1000000) }},\n        \"steps\": 20,\n        \"cfg\": 6,\n        \"sampler_name\": \"euler\",\n        \"scheduler\": \"linear\",\n        \"denoise\": 1,\n        \"model\": [\"1\", 0],\n        \"positive\": [\"4\", 0],\n        \"negative\": [\"5\", 0],\n        \"latent_image\": [\"6\", 0]\n      }\n    },\n    \"8\": {\n      \"class_type\": \"VAEDecodeTiled\",\n      \"inputs\": {\n        \"tile_size\": 256,\n        \"overlap\": 64,\n        \"temporal_size\": 64,\n        \"temporal_overlap\": 8,\n        \"samples\": [\"7\", 0],\n        \"vae\": [\"3\", 0]\n      }\n    },\n    \"9\": {\n      \"class_type\": \"VHS_VideoCombine\",\n      \"inputs\": {\n        \"frame_rate\": 16,\n        \"loop_count\": 0,\n        \"filename_prefix\": \"clip3\",\n        \"format\": \"video/h264-mp4\",\n        \"pix_fmt\": \"yuv420p\",\n        \"crf\": 19,\n        \"save_metadata\": false,\n        \"pingpong\": false,\n        \"save_output\": true,\n        \"images\": [\"8\", 0]\n      }\n    }\n  },\n  \"client_id\": \"n8n-wan-clip3\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        304
+      ],
+      "id": "1b1e79cf-5774-4562-9ed7-acb6748b9c2a",
+      "name": "Generate Video Clip 3 (Wan2.1)"
+    },
+    {
+      "parameters": {
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        160
+      ],
+      "id": "1223f665-aa84-4f5b-af25-613f509ba765",
+      "name": "Wait: Videos Rendering (5min)",
+      "webhookId": "250bb495-6fbc-442c-8f99-9a681835def9"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:8880/v1/audio/speech",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"kokoro\",\n  \"input\": {{ JSON.stringify($('Generate Script & Prompts').item.json.output.narration) }},\n  \"voice\": \"af_bella\",\n  \"response_format\": \"mp3\",\n  \"speed\": 1.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1488,
+        160
+      ],
+      "id": "a5a648d7-ddbb-42a4-8e3b-6fa2854c3122",
+      "name": "Generate Voiceover (Kokoro TTS)"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "🎙️ Voiceover hazır! 🎞️ Final video birləşdirilir (FFmpeg)...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1744,
+        160
+      ],
+      "id": "79fd64be-7d71-4d26-a02b-6717f688bf5f",
+      "name": "Notify: Merging Video",
+      "webhookId": "236df3aa-ddf5-4ddf-9c3b-73e1c2bca244",
+      "credentials": {
+        "telegramApi": {
+          "id": "ysZlOSMsdtFmr7yl",
+          "name": "Sis chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_SERVER_IP:3456/merge",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"clips\": [\n    \"{{ $SERVER_PATH }}/ComfyUI/output/clip1.mp4\",\n    \"{{ $SERVER_PATH }}/ComfyUI/output/clip2.mp4\",\n    \"{{ $SERVER_PATH }}/ComfyUI/output/clip3.mp4\"\n  ],\n  \"audio\": \"{{ $SERVER_PATH }}/audio/narration.mp3\",\n  \"output\": \"{{ $SERVER_PATH }}/output/final_{{ $now.toISO() }}.mp4\",\n  \"resolution\": \"576x1024\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        160
+      ],
+      "id": "3ba2d898-4764-4670-8a67-2ff049d1cab8",
+      "name": "Merge Video + Audio (FFmpeg API)"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2240,
+        160
+      ],
+      "id": "da46a008-7068-4f00-815c-eac731007296",
+      "name": "Wait: Merge Complete (30s)",
+      "webhookId": "c0047b1f-ca18-46ed-9ed5-b111be49e618"
+    },
+    {
+      "parameters": {
+        "url": "=http://YOUR_SERVER_IP:3456/download/final_{{ $('merge-video').item.json.filename }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2496,
+        160
+      ],
+      "id": "049dcda6-eb51-489a-a95a-fc083e9ba9f3",
+      "name": "Download Final Video"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Generate Script & Prompts').item.json.output.videoTitle }}",
+        "regionCode": "AZ",
+        "categoryId": "24",
+        "options": {
+          "description": "={{ $('Generate Script & Prompts').item.json.output.description }}",
+          "tags": "={{ $('Generate Script & Prompts').item.json.output.tags }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        160
+      ],
+      "id": "1b8895c7-15f7-48b1-84f0-5da7c0d4c504",
+      "name": "Upload to YouTube"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ Video YouTube-da yayımlandı!\n\nhttps://www.youtube.com/watch?v={{ $json.uploadId }}\n\n📌 Başlıq: {{ $('Generate Script & Prompts').item.json.output.videoTitle }}\n🏷️ Tags: {{ $('Generate Script & Prompts').item.json.output.tags }}\n\n🤖 100% AI Generated:\n   📸 Şəkillər: FLUX (ComfyUI)\n   🎬 Video: Wan2.1 (ComfyUI)\n   🎙️ Səs: Kokoro TTS\n   ✂️ Montaj: FFmpeg",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2992,
+        160
+      ],
+      "id": "0ff18831-d071-41d8-9d84-4b5a54ef1f4e",
+      "name": "Notify: Done!",
+      "webhookId": "9d9cba2d-a0e7-4e4b-a10d-0706710233c0",
+      "credentials": {
+        "telegramApi": {
+          "id": "ysZlOSMsdtFmr7yl",
+          "name": "Sis chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        368
+      ],
+      "id": "bd9fe72e-6e74-4060-9066-a4af2fc3a420",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SRoMn5qs8d7lguCY",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notify: Starting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify: Starting": {
+      "main": [
+        [
+          {
+            "node": "Generate Script & Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Script & Prompts",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Script & Prompts": {
+      "main": [
+        [
+          {
+            "node": "Generate Image: Scene 1 (ComfyUI)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Image: Scene 2 (ComfyUI)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Image: Scene 3 (ComfyUI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image: Scene 1 (ComfyUI)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Images Rendering (30s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image: Scene 2 (ComfyUI)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Images Rendering (30s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image: Scene 3 (ComfyUI)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Images Rendering (30s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait: Images Rendering (30s)": {
+      "main": [
+        [
+          {
+            "node": "Get Image 1 Path",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Image 2 Path",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Image 3 Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image 1 Path": {
+      "main": [
+        [
+          {
+            "node": "Notify: Generating Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify: Generating Videos": {
+      "main": [
+        [
+          {
+            "node": "Generate Video Clip 1 (Wan2.1)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Video Clip 2 (Wan2.1)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Video Clip 3 (Wan2.1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video Clip 1 (Wan2.1)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Videos Rendering (5min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video Clip 2 (Wan2.1)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Videos Rendering (5min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video Clip 3 (Wan2.1)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Videos Rendering (5min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait: Videos Rendering (5min)": {
+      "main": [
+        [
+          {
+            "node": "Generate Voiceover (Kokoro TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Voiceover (Kokoro TTS)": {
+      "main": [
+        [
+          {
+            "node": "Notify: Merging Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify: Merging Video": {
+      "main": [
+        [
+          {
+            "node": "Merge Video + Audio (FFmpeg API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Video + Audio (FFmpeg API)": {
+      "main": [
+        [
+          {
+            "node": "Wait: Merge Complete (30s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait: Merge Complete (30s)": {
+      "main": [
+        [
+          {
+            "node": "Download Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Final Video": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Notify: Done!",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Script & Prompts",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5b12dddd-371a-4535-a7f5-a90f19820170",
+  "meta": {
+    "instanceId": "593e34977fd61c5711a18860079cc9fe17f1b3f28a792d8ecaa23376abfe140b"
+  },
+  "id": "45MvfEPk8s4yxAqV",
+  "tags": []
+}
